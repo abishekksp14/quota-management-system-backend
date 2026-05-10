@@ -12,16 +12,22 @@ const adminRoutes = require('./routes/admin');
 
 const app = express();
 
-// ─── CORS ────────────────────────────────────────────────────────────────────
-// Must be the FIRST middleware so CORS headers are present even on error responses.
-const corsOptions = {
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  optionsSuccessStatus: 200
-};
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Respond to all preflight OPTIONS requests
+// ─── CORS — Manual raw handler (must be FIRST, before everything) ─────────────
+// The cors npm package was failing to intercept OPTIONS on Vercel's runtime.
+// Setting headers manually guarantees the preflight always gets a 200 response.
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+
+  // Immediately respond to preflight OPTIONS requests — do NOT pass to next()
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  next();
+});
 // ─────────────────────────────────────────────────────────────────────────────
 
 app.use(express.json());
