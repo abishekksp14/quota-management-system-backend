@@ -22,6 +22,14 @@ app.use('/api/requests', requestRoutes);
 app.use('/api/quota', quotaRoutes);
 app.use('/api/admin', adminRoutes);
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'UP', 
+    database: mongoose.connection.readyState === 1 ? 'CONNECTED' : 'DISCONNECTED' 
+  });
+});
+
 // Root route
 app.get('/', (req, res) => {
   res.json({ message: 'Quota Management API is running' });
@@ -29,8 +37,11 @@ app.get('/', (req, res) => {
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB Atlas'))
-  .catch((err) => console.error('MongoDB connection error:', err));
+  .then(() => console.log('Successfully connected to MongoDB'))
+  .catch((err) => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1); // Exit if database connection fails
+  });
 
 // Only start the server if we're not running as a Vercel serverless function
 if (process.env.NODE_ENV !== 'production') {
